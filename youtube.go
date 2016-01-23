@@ -9,7 +9,7 @@ import (
 )
 
 type Video struct {
-	title, id, filename string
+	Id, Title string
 }
 
 func Search(term string) ([]Video, error) {
@@ -25,7 +25,7 @@ func Search(term string) ([]Video, error) {
 	// Make the API call to YouTube.
 	call := service.Search.List("id,snippet").
 		Q(term).
-		MaxResults(10)
+		MaxResults(1)
 	response, err := call.Do()
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func Search(term string) ([]Video, error) {
 	for _, item := range response.Items {
 		switch item.Id.Kind {
 		case "youtube#video":
-			videos = append(videos, Video{item.Id.VideoId, item.Snippet.Title, ""})
+			videos = append(videos, Video{item.Id.VideoId, item.Snippet.Title})
 		}
 	}
 	return videos, nil

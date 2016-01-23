@@ -6,29 +6,36 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/user"
 )
 
 const downloadAPI = "http://www.youtubeinmp3.com/fetch/?format=JSON&video=http://www.youtube.com/watch?v=%s"
 
-func Download(video *Video) error {
-	resp, err := http.Get(fmt.Sprintf(downloadAPI, video.id))
+func Download(video Video) error {
+	resp, err := http.Get(fmt.Sprintf(downloadAPI, video.Id))
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	var metadata map[string]string
 	err = json.NewDecoder(resp.Body).Decode(&metadata)
 	if err != nil {
 		return err
 	}
-	resp, err = http.Get(metadata["link"])
+	fmt.Println(metadata)
+	fileData, err := http.Get(metadata["link"])
 	if err != nil {
 		return err
 	}
-	file, err := os.Open(fmt.Sprintf("~/.jable/%s.mp3", video.id))
+	defer fileData.Body.Close()
+	usr, err := user.Current()
+
+	file, err := os.Create(fmt.Sprintf("%s/.jable/%s.mp3", usr.HomeDir, video.Id))
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(file, resp.Body)
+	defer file.Close()
+	_, err = io.Copy(file, fileData.Body)
 	if err != nil {
 		return err
 	}
