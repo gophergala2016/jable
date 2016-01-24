@@ -23,15 +23,19 @@ func (p *Player) Add(video *Video) {
 
 // Start will start playing the songs from the queue
 func (p *Player) Start() {
-	go func() {
+	go func(p *Player) {
+		fmt.Println("Player starting...")
 		for p.Running {
 			id := <-p.Queue
+			fmt.Printf("Got video %s\n", id)
 			p.Lock <- id
+			fmt.Println("Successfully locked player.")
 			file := fmt.Sprintf("%s/.jable/%s.mp3", userDir, id)
 			p.Play(file)
+			fmt.Println("Playback finished, releasing lock...")
 			<-p.Lock
 		}
-	}()
+	}(p)
 }
 
 // Play starts playback from specified file
@@ -48,7 +52,7 @@ func (p *Player) Play(file string) {
 	dev := ao.NewLiveDevice(aoSampleFormat(handle))
 	defer dev.Close()
 
-	if _, err := io.Copy(dev, handle); err != nil {
+	if _, err := p.copyBuffer(dev, handle); err != nil {
 		handleErr(err)
 		return
 	}
@@ -66,7 +70,7 @@ func NewPlayer() *Player {
 	player := Player{}
 	player.Running = true
 	player.Queue = make(chan string, 10)
-	player.Lock = make(chan string)
+	player.Lock = make(chan string, 1)
 	player.Error = make(chan error)
 	return &player
 }
@@ -83,4 +87,33 @@ func aoSampleFormat(handle *mpg123.Handle) *ao.SampleFormat {
 		ByteFormat:    ao.FormatNative,
 		Matrix:        nil,
 	}
+}
+
+func (p *Player) copyBuffer(dst io.Writer, src io.Reader) (written int64, err error) {
+	buf := make([]byte, 32*1024)
+	for {
+		nr, er := src.Read(buf)
+		if nr > 0 {
+			nw, ew := dst.Write(buf[0:nr])
+			if nw > 0 {
+				written += int64(nw)
+			}
+			if ew != nil {
+				err = ew
+				break
+			}
+			if nr != nw {
+				err = io.ErrShortWrite
+				break
+			}
+		}
+		if er == io.EOF {
+			break
+		}
+		if er != nil {
+			err = er
+			break
+		}
+	}
+	return written, err
 }

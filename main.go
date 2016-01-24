@@ -12,38 +12,31 @@ import (
 
 var userDir string
 
-var red, green, blue, bold *color.Color
+var player *Player
+
+var red, cyan, bold *color.Color
 
 func main() {
 	setup()
 	defer cleanup()
-	player := NewPlayer()
-	//player.Start()
+	player = NewPlayer()
+	player.Start()
 
-	// player.Start()
-	// video, _ := Search("smoke on the water")
-	// err := Download(video[0])
 	scanner := bufio.NewScanner(os.Stdin)
-	blue.Println("Hello there! I am Jabble, and I will play you some music!")
-	fmt.Println(`usage:`)
-	fmt.Println(`\t\t play [search terms]`)
-	fmt.Println(`\t\t exit`)
-	fmt.Print("jable: ")
 	for scanner.Scan() {
 		cmd, args := parseCmd(scanner.Text())
 		switch cmd {
 		case "play":
-			video, err := Search(args)
-			handleErr(err)
-			video.File, err = Download(video.ID)
-			handleErr(err)
-			player.Play(fmt.Sprintf("%s/.jable/%s.mp3", userDir, video.ID))
+			execPlay(args)
+		case "help":
+			execHelp()
 		case "exit":
-			player.Stop()
-			cleanup()
-			os.Exit(0)
+			execExit()
+		default:
+			red.Printf("Invalid command ")
+			bold.Printf("%s %s\n", cmd, args)
 		}
-		fmt.Print("jable: ")
+		bold.Print("jable: ")
 	}
 }
 
@@ -53,9 +46,14 @@ func setup() {
 	os.MkdirAll(userDir+"/.jable", 0777)
 
 	red = color.New(color.FgRed)
-	blue = color.New(color.FgBlue)
-	green = color.New(color.FgGreen)
+	cyan = color.New(color.FgCyan)
 	bold = color.New(color.Bold)
+
+	cyan.Println("Hello there! I am Jable, and I will play you some music!")
+	fmt.Print("Type")
+	bold.Print(" help ")
+	fmt.Println("for list of commands.")
+	bold.Print("jable: ")
 }
 
 func cleanup() {
@@ -69,6 +67,6 @@ func parseCmd(cmd string) (string, string) {
 
 func handleErr(err error) {
 	if err != nil {
-		fmt.Println(err)
+		red.Println(err)
 	}
 }
