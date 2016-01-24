@@ -15,7 +15,7 @@ type Video struct {
 }
 
 // Search will find the first video for the search terms
-func Search(term string) (*Video, error) {
+func Search(term string, num int64) (*Video, error) {
 	client := &http.Client{
 		Transport: &transport.APIKey{Key: "AIzaSyBzqzgWz6_tucORR3NAGw9XC6qPq0ORanc"},
 	}
@@ -28,7 +28,7 @@ func Search(term string) (*Video, error) {
 	// Make the API call to YouTube.
 	call := service.Search.List("id,snippet").
 		Q(term).
-		MaxResults(1)
+		MaxResults(num)
 	response, err := call.Do()
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func Search(term string) (*Video, error) {
 		}
 	}
 
-	if len(videos) < 1 {
+	if len(videos) == 0 {
 		return nil, errors.New("No videos found")
 	}
 	return &videos[0], nil

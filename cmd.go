@@ -5,8 +5,8 @@ import (
 	"os"
 )
 
-func execPlay(args string) {
-	video, err := Search(args)
+func execAdd(args string) {
+	video, err := Search(args, 1)
 	if err != nil {
 		handleErr(err)
 		return
@@ -19,23 +19,36 @@ func execPlay(args string) {
 	player.Add(video)
 }
 
-func execAdd(args string) {
+func execPause() {
+	player.Pause <- 1
+}
 
+func execResume() {
+	player.Resume <- 1
+}
+
+func execSkip() {
+	player.Skip <- 1
 }
 
 func execHelp() {
 	bold.Printf("%15s\t", "help")
 	fmt.Printf("%s\n", "Prints this dialog.")
 	bold.Printf("%15s\t", "play QUERY")
-	fmt.Printf("%s\n", "Finds the first result on YouTube and plays it.")
-	bold.Printf("%15s\t", "add QUERY")
-	fmt.Printf("%s\n", "Finds the first result on YouTube and adds it to the queue.")
+	fmt.Printf("%s\n", "Plays the first result from the query, adds it to the queue if already playing.")
+	bold.Printf("%15s\t", "skip")
+	fmt.Printf("%s\n", "Skips the current song, starts playing the next in queue.")
+	bold.Printf("%15s\t", "pause")
+	fmt.Printf("%s\n", "Pauses the playback for the current song.")
+	bold.Printf("%15s\t", "resume")
+	fmt.Printf("%s\n", "Resumes the playback for the current song.")
 	bold.Printf("%15s\t", "exit")
-	fmt.Printf("%s\n", "Quit Jable.")
+	fmt.Printf("%s", "Quit Jable.")
+	println("")
 }
 
 func execExit() {
-	player.Stop()
+	player.Exit()
 	cleanup()
 	os.Exit(0)
 }

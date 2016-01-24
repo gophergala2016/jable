@@ -2,8 +2,9 @@ package main
 
 import (
 	"bufio"
-	"fmt"
+	"errors"
 	"os"
+	"os/signal"
 	"os/user"
 	"strings"
 
@@ -23,20 +24,30 @@ func main() {
 	player.Start()
 
 	scanner := bufio.NewScanner(os.Stdin)
+	returned()
 	for scanner.Scan() {
 		cmd, args := parseCmd(scanner.Text())
 		switch cmd {
+		case "skip":
+			execSkip()
+			returned()
 		case "play":
-			execPlay(args)
-		case "help":
-			execHelp()
+			execAdd(args)
+		case "pause":
+			execPause()
+			returned()
+		case "resume":
+			execResume()
+			returned()
 		case "exit":
 			execExit()
+			returned()
+		case "help":
+			execHelp()
+			returned()
 		default:
-			red.Printf("Invalid command ")
-			bold.Printf("%s %s\n", cmd, args)
+			handleErr(errors.New("Invalid command"))
 		}
-		bold.Print("jable: ")
 	}
 }
 
@@ -44,16 +55,21 @@ func setup() {
 	usr, _ := user.Current()
 	userDir = usr.HomeDir
 	os.MkdirAll(userDir+"/.jable", 0777)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for range c {
+			execExit()
+		}
+	}()
 
 	red = color.New(color.FgRed)
 	cyan = color.New(color.FgCyan)
 	bold = color.New(color.Bold)
 
-	cyan.Println("Hello there! I am Jable, and I will play you some music!")
-	fmt.Print("Type")
-	bold.Print(" help ")
-	fmt.Println("for list of commands.")
-	bold.Print("jable: ")
+	cyan.Println(" \u266B Hello there! I am Jable, and I will play you some music!\u266B")
+	println("Type 'help' for a list of commands.")
+
 }
 
 func cleanup() {
@@ -66,7 +82,13 @@ func parseCmd(cmd string) (string, string) {
 }
 
 func handleErr(err error) {
-	if err != nil {
-		red.Println(err)
-	}
+	red.Printf("\n%s\n", err)
+}
+
+func println(str string) {
+	bold.Printf("\n%s\n", str)
+}
+
+func returned() {
+	bold.Print("jable: ")
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +15,8 @@ import (
 const checkURI = "https://d.yt-downloader.org/check.php?callback=jable&v=%s&f=mp3&_=%d"
 const convertURI = "https://d.yt-downloader.org/progress.php?callback=jable&id=%s&_=%d"
 const downloadURI = "http://%s.yt-downloader.org/download.php?id=%s"
+
+var errDownload = errors.New("There was an error processing the song, please try again.")
 
 var serverIDs = map[string]string{
 	"1":  "gpkio",
@@ -44,6 +47,7 @@ var serverIDs = map[string]string{
 // Download video with the given id and return the filepath it is stored in
 func Download(id string) (string, error) {
 	metadata := check(id)
+	println("Fetching, converting, buffering...")
 	if metadata["sid"] != "0" && metadata["ce"] != "0" {
 		return fetch(id, metadata["hash"], serverIDs[metadata["sid"]])
 	}
@@ -53,28 +57,30 @@ func Download(id string) (string, error) {
 func fetch(videoID, hash, sid string) (string, error) {
 	fileData, err := http.Get(fmt.Sprintf(downloadURI, sid, hash))
 	if err != nil {
-		return "", err
+		return "", errDownload
 	}
 	defer fileData.Body.Close()
 
 	filename := fmt.Sprintf("%s/.jable/%s.mp3", userDir, videoID)
 	file, err := os.Create(fmt.Sprintf("%s/.jable/%s.mp3", userDir, videoID))
 	if err != nil {
-		return "", err
+		return "", errDownload
 	}
 	defer file.Close()
 	_, err = io.Copy(file, fileData.Body)
 	if err != nil {
-		return "", err
+		return "", errDownload
 	}
 	return filename, nil
 }
 
 func convert(id, hash string) (string, error) {
 	metadata := jsonPRequest(fmt.Sprintf(convertURI, hash, time.Now().Unix()))
-	fmt.Println(metadata)
 	if metadata["progress"] == "3" {
 		return fetch(id, hash, serverIDs[metadata["sid"]])
+	}
+	if metadata["error"] != "" {
+		return "", errDownload
 	}
 	time.Sleep(3 * time.Second)
 	return convert(id, hash)
