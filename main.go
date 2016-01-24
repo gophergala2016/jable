@@ -30,15 +30,12 @@ func main() {
 		switch cmd {
 		case "skip":
 			execSkip()
-			returned()
 		case "play":
 			execAdd(args)
 		case "pause":
 			execPause()
-			returned()
 		case "resume":
 			execResume()
-			returned()
 		case "exit":
 			execExit()
 			returned()
@@ -83,6 +80,7 @@ func parseCmd(cmd string) (string, string) {
 
 func handleErr(err error) {
 	red.Printf("\n%s\n", err)
+	returned()
 }
 
 func println(str string) {
